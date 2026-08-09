@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Florida Self Storage Market Update — July 2026</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+<style>
+  :root[data-theme="dark"] {
+    --surface-1:      #1a1a19;
+    --surface-2:      #212120;
+    --page-plane:     #0d0d0d;
+    --panel-bg:       rgba(26,26,25,0.92);
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+
+    --series-1: #3987e5; /* blue */
+    --series-2: #d95926; /* orange */
+    --series-3: #199e70; /* aqua */
+    --series-4: #c98500; /* yellow */
+    --series-5: #d55181; /* magenta */
+    --series-6: #008300; /* green */
+    --series-7: #9085e9; /* violet */
+    --series-8: #e66767; /* red */
+    --series-other: #52514e;
+
+    --good: #0ca30c;
+  }
+
+  :root[data-theme="light"] {
+    --surface-1:      #fcfcfb;
+    --surface-2:      #f2f1ee;
+    --page-plane:     #f9f9f7;
+    --panel-bg:       rgba(252,252,251,0.92);
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+
+    --series-1: #2a78d6; /* blue */
+    --series-2: #eb6834; /* orange */
+    --series-3: #1baf7a; /* aqua */
+    --series-4: #eda100; /* yellow */
+    --series-5: #e87ba4; /* magenta */
+    --series-6: #008300; /* green */
+    --series-7: #4a3aa7; /* violet */
+    --series-8: #e34948; /* red */
+    --series-other: #898781;
+
+    --good: #0ca30c;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--page-plane);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px;
+    background: var(--surface-1);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; flex-direction: column; gap: 2px; }
+  .brand .title { font-size: 18px; font-weight: 700; letter-spacing: 0.2px; }
+  .brand .subtitle { font-size: 12.5px; color: var(--text-secondary); }
+  .header-controls { display: flex; align-items: center; gap: 12px; }
+  nav.tabs, .theme-toggle { display: flex; gap: 6px; background: var(--page-plane); padding: 4px; border-radius: 10px; border: 1px solid var(--border); }
+  nav.tabs button, .theme-toggle button {
+    appearance: none; border: none; background: transparent; color: var(--text-secondary);
+    font-size: 14px; font-weight: 600; padding: 8px 18px; border-radius: 7px; cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .theme-toggle button { padding: 8px 14px; font-size: 13px; }
+  nav.tabs button.active, .theme-toggle button.active { background: var(--series-1); color: #ffffff; }
+  nav.tabs button:not(.active):hover, .theme-toggle button:not(.active):hover { background: var(--surface-2); color: var(--text-primary); }
+
+  /* ---------- KPI strip ---------- */
+  .kpi-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-tile {
+    background: var(--surface-1); padding: 12px 20px;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .stat-tile .label { font-size: 11.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-tile .value { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+  .stat-tile .sub { font-size: 11.5px; color: var(--text-secondary); }
+
+  /* ---------- Month filter bar ---------- */
+  .month-filter-bar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 12px 24px; background: var(--surface-1); border-bottom: 1px solid var(--border);
+  }
+  .month-filter-bar .mf-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-right: 4px; }
+  .month-chip {
+    appearance: none; border: 1px solid var(--border); background: var(--page-plane); color: var(--text-secondary);
+    font-size: 12.5px; font-weight: 600; padding: 6px 13px; border-radius: 999px; cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .month-chip.active { background: var(--series-1); border-color: var(--series-1); color: #ffffff; }
+  .month-chip:not(.active):hover { border-color: var(--text-muted); color: var(--text-primary); }
+  .month-chip-all { border-color: var(--text-muted); }
+
+  /* ---------- Market toggle row (rental trends legend/filter) ---------- */
+  .market-toggle-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .market-chip {
+    appearance: none; border: 1px solid var(--border); background: var(--page-plane); color: var(--text-secondary);
+    font-size: 12px; font-weight: 600; padding: 5px 12px 5px 9px; border-radius: 999px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background .15s ease, color .15s ease, border-color .15s ease, opacity .15s ease;
+  }
+  .market-chip .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .market-chip:not(.active) { opacity: 0.55; }
+  .market-chip.active { border-color: transparent; color: var(--text-primary); }
+  .market-chip:hover { opacity: 1; border-color: var(--text-muted); }
+
+  /* ---------- Views ---------- */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ---------- Map view ---------- */
+  #map-view { position: relative; height: calc(100vh - 173px); }
+  #map { position: absolute; inset: 0; background: var(--page-plane); }
+
+  .map-panel {
+    position: absolute; z-index: 500;
+    background: var(--panel-bg); backdrop-filter: blur(6px);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; color: var(--text-primary);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .panel-controls { top: 16px; left: 16px; width: 240px; }
+  .panel-legend { bottom: 16px; left: 16px; width: 220px; }
+  .panel-market { top: 16px; right: 16px; width: 260px; }
+
+  .panel-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 10px; }
+  .toggle-row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; font-size: 13.5px; }
+  .toggle-row:last-child { margin-bottom: 0; }
+  .toggle-row input { width: 16px; height: 16px; accent-color: var(--series-1); cursor: pointer; }
+  .toggle-row label { cursor: pointer; user-select: none; }
+  .swatch-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+  select#marketFilter {
+    width: 100%; background: var(--surface-2); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13.5px;
+  }
+
+  .legend-gradient { height: 10px; border-radius: 5px; margin: 6px 0 4px 0;
+    background: linear-gradient(90deg, rgba(37,106,191,0) 0%, #256abf 40%, #d95926 75%, #e34948 100%); }
+  .legend-scale { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-muted); margin-bottom: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px; }
+  .legend-item:last-child { margin-bottom: 0; }
+
+  .leaflet-popup-content-wrapper { background: var(--surface-1); color: var(--text-primary); border-radius: 8px; }
+  .leaflet-popup-tip { background: var(--surface-1); }
+  .popup-title { font-weight: 700; font-size: 13.5px; margin-bottom: 4px; }
+  .popup-row { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .popup-row b { color: var(--text-primary); }
+
+  /* ---------- Numbers view ---------- */
+  #numbers-view { padding: 22px 24px 60px; max-width: 1440px; margin: 0 auto; }
+  .section-heading { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin: 28px 0 12px; }
+  .section-heading:first-child { margin-top: 0; }
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .chart-grid.full { grid-template-columns: 1fr; }
+  .chart-card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px;
+    min-width: 0; /* grid items default to min-width:auto, which locks to the canvas's intrinsic size and blocks shrinking */
+  }
+  .chart-card h3 { margin: 0 0 2px; font-size: 15px; font-weight: 700; }
+  .chart-card .chart-note { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+  .chart-card .chart-wrap { position: relative; height: 280px; min-width: 0; }
+  .chart-card .chart-wrap.tall { height: 320px; }
+  .chart-card .chart-wrap canvas { max-width: 100%; }
+
+  details.data-table-toggle { margin-top: 30px; }
+  details.data-table-toggle summary {
+    cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.6px; padding: 10px 0; outline: none;
+  }
+  table.data-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12.5px; }
+  table.data-table th, table.data-table td {
+    text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--gridline);
+    white-space: nowrap;
+  }
+  table.data-table th { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.4px; }
+  table.data-table td { color: var(--text-secondary); }
+  table.data-table tr:hover td { color: var(--text-primary); }
+  table.data-table tfoot td { color: var(--text-primary); font-weight: 700; border-bottom: none; border-top: 1px solid var(--baseline); }
+  .table-scroll { overflow-x: auto; }
+  .flag-undisclosed { color: var(--text-muted); font-style: italic; }
+  .flag-rv { color: var(--series-4); }
+
+  footer.note { max-width: 1440px; margin: 0 auto; padding: 0 24px 40px; font-size: 11.5px; color: var(--text-muted); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="title">Florida Self Storage Market Update</div>
+    <div class="subtitle">Oakside Co. &middot; Sales Comps &amp; New Supply &middot; YTD through July 2026</div>
+  </div>
+  <div class="header-controls">
+    <nav class="tabs">
+      <button id="tab-btn-map" class="active" onclick="showView('map')">Market Map</button>
+      <button id="tab-btn-numbers" onclick="showView('numbers')">By The Numbers</button>
+    </nav>
+    <div class="theme-toggle" role="group" aria-label="Theme">
+      <button id="theme-btn-dark" class="active" onclick="setTheme('dark')">Dark</button>
+      <button id="theme-btn-light" onclick="setTheme('light')">Light</button>
+    </div>
+  </div>
+</header>
+
+<div class="kpi-strip" id="kpiStrip"></div>
+
+<div class="month-filter-bar">
+  <span class="mf-label">Months (2026)</span>
+  <button class="month-chip month-chip-all" id="monthChipAll" onclick="toggleAllMonths()">All</button>
+  <span id="monthChips"></span>
+</div>
+
+<div id="map-view" class="view active">
+  <div id="map"></div>
+
+  <div class="map-panel panel-controls">
+    <div class="panel-title">Map Layers</div>
+    <div class="toggle-row">
+      <input type="checkbox" id="toggleHeat" checked onchange="updateMapLayers()">
+      <label for="toggleHeat"><span class="swatch-dot" style="background:#256abf"></span> New supply heatmap</label>
+    </div>
+    <div class="toggle-row">
+      <input type="checkbox" id="toggleSales" checked onchange="updateMapLayers()">
+      <label for="toggleSales"><span class="swatch-dot" style="background:#199e70"></span> Sales comps</label>
+    </div>
+    <div class="toggle-row">
+      <input type="checkbox" id="toggleRv" checked onchange="updateMapLayers()">
+      <label for="toggleRv"><span class="swatch-dot" style="background:#c98500"></span> RV / boat storage</label>
+    </div>
+  </div>
+
+  <div class="map-panel panel-market">
+    <div class="panel-title">Filter by Market</div>
+    <select id="marketFilter" onchange="updateMapLayers()">
+      <option value="ALL">All Florida Markets</option>
+    </select>
+  </div>
+
+  <div class="map-panel panel-legend">
+    <div class="panel-title">Legend</div>
+    <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:2px;">New supply density</div>
+    <div class="legend-gradient"></div>
+    <div class="legend-scale"><span>Lower</span><span>Higher</span></div>
+    <div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-bottom:12px;">
+      Each completed facility contributes a glow sized by its SqFt; overlapping glows blend and intensify — so a cluster of mid-size projects can heat up as much as one large one. Color = local intensity, not a single site's size.
+    </div>
+    <div class="legend-item"><span class="swatch-dot" style="background:#199e70"></span> Sales comp (size = deal price)</div>
+    <div class="legend-item"><span class="swatch-dot" style="background:#c98500"></span> RV / boat storage (excluded from SF totals)</div>
+  </div>
+</div>
+
+<div id="numbers-view" class="view">
+
+  <div class="section-heading">New Supply — Jan &ndash; Jul 2026</div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>SqFt Delivered by Market</h3>
+      <div class="chart-note">Traditional self storage only &middot; excludes RV/boat-only facilities</div>
+      <div class="chart-wrap tall"><canvas id="chartSqftByMarket"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Monthly SqFt Delivered</h3>
+      <div class="chart-note">Statewide, all Florida markets combined</div>
+      <div class="chart-wrap tall"><canvas id="chartMonthlySqft"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid full" style="margin-top:16px;">
+    <div class="chart-card">
+      <h3>Total Monthly Completions</h3>
+      <div class="chart-note">Number of self storage facilities delivered per month &middot; excludes RV/boat-only facilities</div>
+      <div class="chart-wrap tall"><canvas id="chartMonthlyCompletions"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-heading">New Development — New Deliveries</div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>Developer Concentration</h3>
+      <div class="chart-note">Facilities grouped by how many projects the builder delivered YTD &middot; no names shown</div>
+      <div class="chart-wrap"><canvas id="chartTopDevelopers"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Completions by Market</h3>
+      <div class="chart-note">Share of the 68 self storage facilities delivered YTD</div>
+      <div class="chart-wrap"><canvas id="chartCompletionsShare"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-heading">Sales Comps — Jan &ndash; Jul 2026</div>
+  <div class="chart-grid full">
+    <div class="chart-card">
+      <h3>Sales Volume by Market</h3>
+      <div class="chart-note">Disclosed transactions only &middot; $ in millions</div>
+      <div class="chart-wrap tall"><canvas id="chartVolumeByMarket"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid" style="margin-top:16px;">
+    <div class="chart-card">
+      <h3>Monthly Sales Volume</h3>
+      <div class="chart-note">Statewide, disclosed transactions &middot; $ in millions</div>
+      <div class="chart-wrap"><canvas id="chartMonthlyVolume"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3># of Sales by Month</h3>
+      <div class="chart-note">All transactions, statewide &middot; includes the 1 undisclosed sale</div>
+      <div class="chart-wrap"><canvas id="chartMonthlySalesCount"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid full" style="margin-top:16px;">
+    <div class="chart-card">
+      <h3>Sales by Market</h3>
+      <div class="chart-note">All transactions, including the undisclosed sale &middot; sorted by count</div>
+      <div class="table-scroll">
+        <table class="data-table" id="salesByMarketTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-heading">Rental Market Trends — Jul 2025 &ndash; Jul 2026</div>
+  <div class="chart-grid full">
+    <div class="chart-card">
+      <h3>10x10 Monthly Rate by Market</h3>
+      <div class="chart-note">Street rate for a 10x10 unit &middot; toggle markets on/off to compare trend lines</div>
+      <div class="market-toggle-row" id="rentalMarketToggles">
+        <button class="month-chip month-chip-all" id="rentalChipAll" onclick="setAllRentalMarkets(true)">All</button>
+        <button class="month-chip month-chip-all" onclick="setAllRentalMarkets(false)">None</button>
+      </div>
+      <div class="chart-wrap tall"><canvas id="chartRentalTrends"></canvas></div>
+    </div>
+  </div>
+
+  <details class="data-table-toggle">
+    <summary>View full sales comps data (22 transactions)</summary>
+    <div class="table-scroll">
+      <table class="data-table" id="salesTable"></table>
+    </div>
+  </details>
+
+  <details class="data-table-toggle">
+    <summary>View full new supply data (71 facilities)</summary>
+    <div class="table-scroll">
+      <table class="data-table" id="constrTable"></table>
+    </div>
+  </details>
+
+</div>
+
+<footer class="note">
+  Source: Yardi Matrix, Florida self storage sales comps and construction completions, pulled August 2026. New-supply figures reflect completion dates only (no permit/start data was available), so the map and charts present recently delivered supply rather than a forward-looking pipeline. One sale (Extra Space Storage, Hialeah) was excluded from price-based metrics as an undisclosed / related-party transfer. Three construction records are RV/boat storage facilities and are excluded from SqFt and completion-count totals but still shown on the map.
+</footer>
+
+<script>
+const DATA = {"sales": [{"property": "Public Storage", "city": "St. Augustine", "market": "Jacksonville", "lat": 29.9596895, "lng": -81.4708381, "saleDate": "2026-01-29", "price": 13.3, "pricePerNrsf": 299.47, "buyer": "McDonald Group", "seller": "AAA  Storage Investments", "disclosed": true, "sqft": 79159.0, "imprRating": "B", "locRating": "C+", "yearBuilt": 2022}, {"property": "Extra Space Storage", "city": "Hialeah", "market": "Miami", "lat": 25.869956, "lng": -80.320967, "saleDate": "2026-02-04", "price": null, "pricePerNrsf": null, "buyer": "Volta Global", "seller": "Nunez, Raul L.", "disclosed": false, "sqft": 60975.0, "imprRating": "B", "locRating": "C+", "yearBuilt": 1979}, {"property": "SecureSpace Self Storage", "city": "Miami", "market": "Miami", "lat": 25.80431, "lng": -80.206381, "saleDate": "2026-07-28", "price": 32.72, "pricePerNrsf": 265.2, "buyer": "InSite", "seller": "Pryor, Howard", "disclosed": true, "sqft": 123379.0, "imprRating": "B", "locRating": "C", "yearBuilt": 2020}, {"property": "Compass Self Storage", "city": "Gainesville", "market": "North Central Florida", "lat": 29.741164, "lng": -82.388091, "saleDate": "2026-05-22", "price": 11.25, "pricePerNrsf": 148.86, "buyer": "Amsdell Companies", "seller": "Mckinney, Mark W.", "disclosed": true, "sqft": 75572.0, "imprRating": "B", "locRating": "C+", "yearBuilt": 2000}, {"property": "MyPlace Self Storage", "city": "DeLand", "market": "North Central Florida", "lat": 29.0715238, "lng": -81.3038309, "saleDate": "2026-06-04", "price": 4.125, "pricePerNrsf": 96.18, "buyer": "MyPlace Self Storage", "seller": "Personal Mini Storage", "disclosed": true, "sqft": 42890.0, "imprRating": "B", "locRating": "C+", "yearBuilt": 2021}, {"property": "Prime Storage", "city": "Flagler Beach", "market": "North Central Florida", "lat": 29.471647, "lng": -81.142801, "saleDate": "2026-07-14", "price": 1.75, "pricePerNrsf": 58.29, "buyer": "Prime Group Holdings", "seller": "Fraser, Derek G.", "disclosed": true, "sqft": 30020.0, "imprRating": "B", "locRating": "C+", "yearBuilt": 1990}, {"property": "Prime Storage", "city": "Bunnell", "market": "North Central Florida", "lat": 29.476325, "lng": -81.246335, "saleDate": "2026-07-14", "price": 7.25, "pricePerNrsf": 97.65, "buyer": "Prime Group Holdings", "seller": "Fraser, Derek G.", "disclosed": true, "sqft": 74244.0, "imprRating": "B", "locRating": "C", "yearBuilt": 1988}, {"property": "Public Storage", "city": "Pace", "market": "Pensacola", "lat": 30.6041018, "lng": -87.1253114, "saleDate": "2026-01-22", "price": 4.5, "pricePerNrsf": 95.67, "buyer": "McDonald Group", "seller": "Jarvie, David A.", "disclosed": true, "sqft": 47037.0, "imprRating": "B", "locRating": "B", "yearBuilt": 2023}, {"property": "CubeSmart Self Storage", "city": "Saint Lucie West", "market": "Port St. Lucie", "lat": 27.3229896, "lng": -80.4113289, "saleDate": "2026-03-24", "price": 2.975, "pricePerNrsf": 81.93, "buyer": "Merit Hill Capital", "seller": "Smoot, Jacob C.", "disclosed": true, "sqft": 36313.0, "imprRating": "B", "locRating": "B-", "yearBuilt": 1995}, {"property": "MyPlace Self Storage", "city": "Vero Beach", "market": "Port St. Lucie", "lat": 27.695632, "lng": -80.414936, "saleDate": "2026-05-01", "price": 9.0, "pricePerNrsf": 184.46, "buyer": "MyPlace Self Storage", "seller": "City Line Capital", "disclosed": true, "sqft": 48791.0, "imprRating": "B", "locRating": "B", "yearBuilt": 2000}, {"property": "Store Space Self Storage", "city": "Fort Myers", "market": "Southwest Florida Coast", "lat": 26.5994078591631, "lng": -81.8654891722637, "saleDate": "2026-02-27", "price": 8.636, "pricePerNrsf": 98.53, "buyer": "Palatine Capital Partners", "seller": "Store Space", "disclosed": true, "sqft": 87650.0, "imprRating": "A", "locRating": "B-", "yearBuilt": 2024}, {"property": "Self Storage Plus", "city": "Fort Myers", "market": "Southwest Florida Coast", "lat": 26.492798, "lng": -81.931574, "saleDate": "2026-03-24", "price": 11.55, "pricePerNrsf": 107.61, "buyer": "Arcland", "seller": "Metro Storage", "disclosed": true, "sqft": 107335.0, "imprRating": "A", "locRating": "C", "yearBuilt": 1997}, {"property": "CubeSmart Self Storage", "city": "Sarasota", "market": "Southwest Florida Coast", "lat": 27.416173, "lng": -82.54031, "saleDate": "2026-04-10", "price": 5.1, "pricePerNrsf": 109.24, "buyer": "Merit Hill Capital", "seller": "Briggs, Shawn", "disclosed": true, "sqft": 46688.0, "imprRating": "C", "locRating": "B-", "yearBuilt": 1974}, {"property": "Public Storage", "city": "Englewood", "market": "Southwest Florida Coast", "lat": 26.9719432719762, "lng": -82.354122, "saleDate": "2026-05-22", "price": 9.25, "pricePerNrsf": 109.22, "buyer": "Public Storage", "seller": "Grzenda, Steve", "disclosed": true, "sqft": 84694.0, "imprRating": "A", "locRating": "C+", "yearBuilt": 2020}, {"property": "Storage Rentals of America", "city": "Fort Myers", "market": "Southwest Florida Coast", "lat": 26.6155909141983, "lng": -81.7724073337165, "saleDate": "2026-06-09", "price": 9.03, "pricePerNrsf": 101.99, "buyer": "SROA Capital", "seller": "York Developments", "disclosed": true, "sqft": 88539.0, "imprRating": "A", "locRating": "B", "yearBuilt": 2023}, {"property": "Bison Storage", "city": "Clearwater", "market": "Tampa - St Petersburg - Clearwater", "lat": 27.968267, "lng": -82.748351, "saleDate": "2026-02-27", "price": 3.425, "pricePerNrsf": 124.07, "buyer": "State Storage Group", "seller": "Pasqualone, Dawn A.", "disclosed": true, "sqft": 27605.0, "imprRating": "B", "locRating": "B", "yearBuilt": 1982}, {"property": "Extra Space Storage", "city": "Ruskin", "market": "Tampa - St Petersburg - Clearwater", "lat": 27.7121062420433, "lng": -82.389486, "saleDate": "2026-03-02", "price": 10.8, "pricePerNrsf": 192.03, "buyer": "Blue Vista Capital Management", "seller": "Weiner, Bruce A.", "disclosed": true, "sqft": 56240.0, "imprRating": "A", "locRating": "B-", "yearBuilt": 2025}, {"property": "Compass Self Storage", "city": "Mulberry", "market": "Tampa - St Petersburg - Clearwater", "lat": 27.91168, "lng": -81.975764, "saleDate": "2026-03-24", "price": 13.382, "pricePerNrsf": 148.89, "buyer": "Amsdell Companies", "seller": "VanWest Partners", "disclosed": true, "sqft": 89875.0, "imprRating": "B", "locRating": "C", "yearBuilt": 2007}, {"property": "Trunk Space Storage", "city": "Tampa", "market": "Tampa - St Petersburg - Clearwater", "lat": 27.892043, "lng": -82.5182, "saleDate": "2026-06-03", "price": 8.25, "pricePerNrsf": 149.48, "buyer": "Baranof Holdings", "seller": "William Warren Group, The", "disclosed": true, "sqft": 55190.0, "imprRating": "B", "locRating": "C+", "yearBuilt": 1986}, {"property": "Trunk Space Storage", "city": "Tampa", "market": "Tampa - St Petersburg - Clearwater", "lat": 27.900731, "lng": -82.507656, "saleDate": "2026-06-03", "price": 6.125, "pricePerNrsf": 123.42, "buyer": "Baranof Holdings", "seller": "William Warren Group, The", "disclosed": true, "sqft": 44404.0, "imprRating": "B", "locRating": "B-", "yearBuilt": 1962}, {"property": "StoreEase", "city": "Delray Beach", "market": "West Palm Beach - Boca Raton", "lat": 26.4518106754031, "lng": -80.184547, "saleDate": "2026-01-05", "price": 7.5, "pricePerNrsf": 110.71, "buyer": "Martinez, Luis F.", "seller": "Pebb Enterprises", "disclosed": true, "sqft": 67746.0, "imprRating": "B", "locRating": "B-", "yearBuilt": 2025}, {"property": "LocalStorage", "city": "West Palm Beach", "market": "West Palm Beach - Boca Raton", "lat": 26.780342, "lng": -80.106552, "saleDate": "2026-02-24", "price": 12.766, "pricePerNrsf": 234.78, "buyer": "LocalStorage Group", "seller": "SROA Capital", "disclosed": true, "sqft": 54375.0, "imprRating": "B", "locRating": "B", "yearBuilt": 1986}], "construction": [{"property": "Afforable Secure Storage", "city": "Lakeland", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.0467357344376, "lng": -81.989633, "completionDate": "2026-02-10", "sqft": 72558.0, "owner": "Sheehan, Timothy G.", "isRvBoat": false}, {"property": "BlueGate Boat & RV Storage", "city": "Bonita Springs", "market": "Southwest Florida Coast", "lat": 26.3841200893223, "lng": -81.806268, "completionDate": "2026-05-04", "sqft": null, "owner": "Madison Capital Group", "isRvBoat": true}, {"property": "Centro Storage", "city": "Jacksonville", "market": "Jacksonville", "lat": 30.4110504032989, "lng": -81.659551, "completionDate": "2026-03-23", "sqft": 135131.0, "owner": "Third Lake Development", "isRvBoat": false}, {"property": "Centro Storage", "city": "Jacksonville", "market": "Jacksonville", "lat": 30.4643147619431, "lng": -81.67265, "completionDate": "2026-04-20", "sqft": 112831.0, "owner": "Third Lake Development", "isRvBoat": false}, {"property": "Centro Storage", "city": "Osprey", "market": "Southwest Florida Coast", "lat": 27.177909654705, "lng": -82.4795752, "completionDate": "2026-05-27", "sqft": 141600.0, "owner": "Third Lake Development", "isRvBoat": false}, {"property": "Chaffee Road Neighborhood Storage", "city": "Jacksonville", "market": "Jacksonville", "lat": 30.315765, "lng": -81.847607, "completionDate": "2026-04-20", "sqft": 57795.0, "owner": "Bigford Enterprises", "isRvBoat": false}, {"property": "Compass Self Storage", "city": "Florida City", "market": "Miami", "lat": 25.4446219522669, "lng": -80.476699, "completionDate": "2026-02-23", "sqft": 128124.0, "owner": "Amsdell Companies", "isRvBoat": false}, {"property": "CubeSmart Self Storage", "city": "Wesley Chapel", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.1900909666957, "lng": -82.3217511, "completionDate": "2026-02-26", "sqft": 102600.0, "owner": "Miller Valentine Investment", "isRvBoat": false}, {"property": "CubeSmart Self Storage", "city": "Ruskin", "market": "Tampa - St Petersburg - Clearwater", "lat": 27.7269875466676, "lng": -82.3820878, "completionDate": "2026-05-12", "sqft": 69840.0, "owner": "Baldwin Howell Properties", "isRvBoat": false}, {"property": "CubeSmart Self Storage", "city": "Lake Wales", "market": "Tampa - St Petersburg - Clearwater", "lat": 27.9483426154719, "lng": -81.618923, "completionDate": "2026-01-12", "sqft": 132422.0, "owner": "Robert High Development", "isRvBoat": false}, {"property": "CubeSmart Self Storage", "city": "Sarasota", "market": "Southwest Florida Coast", "lat": 27.3376509562393, "lng": -82.4276996, "completionDate": "2026-03-09", "sqft": 87185.0, "owner": "Vandervoort, Cutler M.", "isRvBoat": false}, {"property": "CubeSmart Self Storage", "city": "Lecanto", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.89532673168, "lng": -82.4846103, "completionDate": "2026-04-22", "sqft": 83604.0, "owner": "Miller Valentine Investment", "isRvBoat": false}, {"property": "CubeSmart Self Storage", "city": "Middleburg", "market": "Jacksonville", "lat": 30.101065, "lng": -81.83193, "completionDate": "2026-01-21", "sqft": 162560.0, "owner": "Horizon Storage Group", "isRvBoat": false}, {"property": "CubeSmart Self Storage", "city": "Cape Coral", "market": "Southwest Florida Coast", "lat": 26.5890153061103, "lng": -82.007609, "completionDate": "2026-01-26", "sqft": 148760.0, "owner": "Shamrock Builders", "isRvBoat": false}, {"property": "CubeSmart Self Storage", "city": "Kissimmee", "market": "Orlando", "lat": 28.2382781535, "lng": -81.489389, "completionDate": "2026-06-26", "sqft": 130083.0, "owner": "Island Estate Group", "isRvBoat": false}, {"property": "CubeSmart Self Storage", "city": "Coconut Creek", "market": "Fort Lauderdale", "lat": 26.286335, "lng": -80.195121, "completionDate": "2026-03-15", "sqft": 88435.0, "owner": "SouthWestern Property Corp", "isRvBoat": false}, {"property": "Cubesmart Self Storage", "city": "Fort Myers", "market": "Southwest Florida Coast", "lat": 26.5490695463606, "lng": -81.7880554676237, "completionDate": "2026-01-08", "sqft": 99738.0, "owner": "Treeline Development Co.", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Boynton Beach", "market": "West Palm Beach - Boca Raton", "lat": 26.52943, "lng": -80.180996, "completionDate": "2026-06-02", "sqft": 129724.0, "owner": "Shadowbrook Capital", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Sarasota", "market": "Southwest Florida Coast", "lat": 27.3517588767254, "lng": -82.52073, "completionDate": "2026-07-10", "sqft": 117372.0, "owner": "DXD. Capital", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Tampa", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.0569, "lng": -82.505167, "completionDate": "2026-03-19", "sqft": 99556.0, "owner": "Bednarsk, Michael J.", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Parkland", "market": "Fort Lauderdale", "lat": 26.3351839764168, "lng": -80.2315706, "completionDate": "2026-02-01", "sqft": 162132.0, "owner": "The Feldman Companies", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Apollo Beach", "market": "Tampa - St Petersburg - Clearwater", "lat": 27.7733838847473, "lng": -82.390904, "completionDate": "2026-05-01", "sqft": 90339.0, "owner": "Long, Arthur B.", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Daytona Beach", "market": "North Central Florida", "lat": 29.2365070445606, "lng": -81.070662, "completionDate": "2026-03-27", "sqft": 107612.0, "owner": "Flagship Companies Group", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Kissimmee", "market": "Orlando", "lat": 28.2611629500802, "lng": -81.3266091, "completionDate": "2026-04-01", "sqft": 87534.0, "owner": "HB Capital", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Bradenton", "market": "Southwest Florida Coast", "lat": 27.4368313348166, "lng": -82.396049, "completionDate": "2026-06-02", "sqft": 76771.0, "owner": "Didomenico, Jaime V.", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Hialeah", "market": "Miami", "lat": 25.9209774594944, "lng": -80.359029, "completionDate": "2026-02-16", "sqft": 107837.0, "owner": "Taylor Theus Holdings", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Palmetto Bay", "market": "Miami", "lat": 25.6067620502176, "lng": -80.352172, "completionDate": "2026-07-06", "sqft": 128313.0, "owner": "The Feldman Companies", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Fort Myers", "market": "Southwest Florida Coast", "lat": 26.5130597783323, "lng": -81.860628, "completionDate": "2026-04-22", "sqft": 94870.0, "owner": "Keeley Properties", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Wellington", "market": "West Palm Beach - Boca Raton", "lat": 26.6640124297839, "lng": -80.204658, "completionDate": "2026-07-13", "sqft": 71828.0, "owner": "Lock Up Self Storage", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "St Johns", "market": "Jacksonville", "lat": 30.1113641349806, "lng": -81.5660183, "completionDate": "2026-03-25", "sqft": 112690.0, "owner": "McKnight Construction", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Parrish", "market": "Southwest Florida Coast", "lat": 27.5663652232027, "lng": -82.4281861, "completionDate": "2026-03-18", "sqft": 106319.0, "owner": "Hampshire Companies, The", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Bradenton", "market": "Southwest Florida Coast", "lat": 27.4410266319584, "lng": -82.466836, "completionDate": "2026-05-01", "sqft": 109116.0, "owner": "HPI Real Estate Services & Investments", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Tampa", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.064839, "lng": -82.570694, "completionDate": "2026-03-25", "sqft": 102913.0, "owner": "NitNeil Partners", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Haines City", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.1154392619064, "lng": -81.587358, "completionDate": "2026-03-30", "sqft": 90420.0, "owner": "Blackfin Partners", "isRvBoat": false}, {"property": "Extra Space Storage", "city": "Palm Bay", "market": "Orlando", "lat": 27.9994302994697, "lng": -80.743946, "completionDate": "2026-01-12", "sqft": 89971.0, "owner": "PAR Storage Development", "isRvBoat": false}, {"property": "Glacier Self Storage", "city": "Jacksonville", "market": "Jacksonville", "lat": 30.4484010346771, "lng": -81.626598, "completionDate": "2026-03-18", "sqft": 53490.0, "owner": "Natvig, Gustave O.", "isRvBoat": false}, {"property": "Go Store It", "city": "Melbourne", "market": "Orlando", "lat": 28.0922117399745, "lng": -80.623843, "completionDate": "2026-03-04", "sqft": 101579.0, "owner": "Madison Capital Group", "isRvBoat": false}, {"property": "Great American Self Storage", "city": "Ocala", "market": "North Central Florida", "lat": 29.063937, "lng": -82.2705299, "completionDate": "2026-06-17", "sqft": 126730.0, "owner": "Great American Self Storage", "isRvBoat": false}, {"property": "Honey Bee RV Storage", "city": "Punta Gorda", "market": "Southwest Florida Coast", "lat": 26.874686, "lng": -82.00446, "completionDate": "2026-07-27", "sqft": null, "owner": "Macritchie Group, The", "isRvBoat": true}, {"property": "Links Storage", "city": "Fort Myers", "market": "Southwest Florida Coast", "lat": 26.5692483617967, "lng": -81.82933836, "completionDate": "2026-07-01", "sqft": 181831.0, "owner": "McGarvey, John S.", "isRvBoat": false}, {"property": "MetroMaxx Recreational Vehicle & Boat Storage", "city": "Fort Myers", "market": "Southwest Florida Coast", "lat": 26.574495287301, "lng": -81.852495, "completionDate": "2026-01-26", "sqft": 81550.0, "owner": "Stancel, Chad W.", "isRvBoat": false}, {"property": "Palm Beach RV & Boat Storage", "city": "Fort Myers", "market": "Southwest Florida Coast", "lat": 26.6979314420509, "lng": -81.773834, "completionDate": "2026-07-20", "sqft": null, "owner": "Zielinski, Mary T.", "isRvBoat": true}, {"property": "Public Storage", "city": "Palmetto", "market": "Southwest Florida Coast", "lat": 27.5995875076666, "lng": -82.4958493957745, "completionDate": "2026-04-27", "sqft": 102802.0, "owner": "Premier Storage Investors", "isRvBoat": false}, {"property": "Public Storage", "city": "Plant City", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.0071393684592, "lng": -82.1724064355186, "completionDate": "2026-06-04", "sqft": 93157.0, "owner": "Stack Real Estate", "isRvBoat": false}, {"property": "Public Storage", "city": "Port Charlotte", "market": "Southwest Florida Coast", "lat": 26.9315799309382, "lng": -82.2357592, "completionDate": "2026-07-07", "sqft": 141960.0, "owner": "Shoemaker, Craig W.", "isRvBoat": false}, {"property": "Public Storage", "city": "Kissimmee", "market": "Orlando", "lat": 28.263181, "lng": -81.329686, "completionDate": "2026-03-17", "sqft": 119013.0, "owner": "Stor - All Storage", "isRvBoat": false}, {"property": "Public Storage", "city": "Wesley Chapel", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.2416472492301, "lng": -82.3094671, "completionDate": "2026-01-27", "sqft": 115532.0, "owner": "Public Storage", "isRvBoat": false}, {"property": "Raceway Self Storage", "city": "Sebring", "market": "Port St. Lucie", "lat": 27.4129209615699, "lng": -81.497178, "completionDate": "2026-01-21", "sqft": 56753.0, "owner": "BlackRock Construction & Development", "isRvBoat": false}, {"property": "Space 2 Store Self Storage", "city": "Cape Coral", "market": "Southwest Florida Coast", "lat": 26.7257671717989, "lng": -81.9303281, "completionDate": "2026-04-29", "sqft": 131933.0, "owner": "Moore, Scott M.", "isRvBoat": false}, {"property": "Space Shop Self Storage", "city": "Saint Cloud", "market": "Orlando", "lat": 28.221666, "lng": -81.244116, "completionDate": "2026-01-23", "sqft": 105138.0, "owner": "Wakefield Development", "isRvBoat": false}, {"property": "Space Shop Self Storage", "city": "Jacksonville", "market": "Jacksonville", "lat": 30.4806004708294, "lng": -81.6274614, "completionDate": "2026-02-17", "sqft": 125945.0, "owner": "Miller Valentine Investment", "isRvBoat": false}, {"property": "Space Shop Self Storage", "city": "Largo", "market": "Tampa - St Petersburg - Clearwater", "lat": 27.914509, "lng": -82.774391, "completionDate": "2026-03-31", "sqft": 158442.0, "owner": "Merchants Retail Partners", "isRvBoat": false}, {"property": "Space Shop Self Storage", "city": "Cape Coral", "market": "Southwest Florida Coast", "lat": 26.6189439741, "lng": -81.990413, "completionDate": "2026-07-07", "sqft": 97033.0, "owner": "Wakefield Development", "isRvBoat": false}, {"property": "Space Shop Self Storage", "city": "Rockledge", "market": "Orlando", "lat": 28.3091512257672, "lng": -80.742047, "completionDate": "2026-03-18", "sqft": 105000.0, "owner": "Wakefield Development", "isRvBoat": false}, {"property": "Space Shop Self Storage", "city": "Haines City", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.0835758660573, "lng": -81.62042222999, "completionDate": "2026-03-16", "sqft": 120000.0, "owner": "Blanchard", "isRvBoat": false}, {"property": "SR 60 Storage", "city": "Bartow", "market": "Tampa - St Petersburg - Clearwater", "lat": 27.9094952, "lng": -81.7887476, "completionDate": "2026-05-18", "sqft": 94500.0, "owner": "Radermacher, David J.", "isRvBoat": false}, {"property": "Storage Rentals of America", "city": "West Palm Beach", "market": "West Palm Beach - Boca Raton", "lat": 26.7585979083407, "lng": -80.083216, "completionDate": "2026-01-12", "sqft": 99870.0, "owner": "SROA Capital", "isRvBoat": false}, {"property": "Store Space", "city": "Ellenton", "market": "Southwest Florida Coast", "lat": 27.5375643797864, "lng": -82.49122419, "completionDate": "2026-04-20", "sqft": 119473.0, "owner": "Store Space", "isRvBoat": false}, {"property": "Store Space", "city": "Seffner", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.0060845425506, "lng": -82.2773311, "completionDate": "2026-05-07", "sqft": 69745.0, "owner": "Midwest Storage Developers", "isRvBoat": false}, {"property": "Store Space Self Storage", "city": "Altamonte Springs", "market": "Orlando", "lat": 28.6702878410725, "lng": -81.346384, "completionDate": "2026-05-11", "sqft": 117000.0, "owner": "Store Space", "isRvBoat": false}, {"property": "Stored Self Storage", "city": "Jacksonville", "market": "Jacksonville", "lat": 30.3886567, "lng": -81.6821651, "completionDate": "2026-01-26", "sqft": 97850.0, "owner": "Cochran, Stephanie G.", "isRvBoat": false}, {"property": "StorQuest Self Storage", "city": "Winter Haven", "market": "Tampa - St Petersburg - Clearwater", "lat": 27.9590875580165, "lng": -81.6702431, "completionDate": "2026-07-02", "sqft": 106925.0, "owner": "Randall L., Knapp", "isRvBoat": false}, {"property": "StorSafe", "city": "Rockledge", "market": "Orlando", "lat": 28.2973539, "lng": -80.7006601, "completionDate": "2026-03-17", "sqft": 80850.0, "owner": "Elmdale Partners", "isRvBoat": false}, {"property": "Sunny Storage", "city": "Clermont", "market": "Orlando", "lat": 28.5442253833188, "lng": -81.737371, "completionDate": "2026-06-26", "sqft": 150000.0, "owner": "i4 Capital Group", "isRvBoat": false}, {"property": "Terrace Storage Center", "city": "Land O' Lakes", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.2659227196583, "lng": -82.4789104, "completionDate": "2026-03-27", "sqft": 98754.0, "owner": "Charles, Michael G.", "isRvBoat": false}, {"property": "Toy Locker", "city": "Cape Coral", "market": "Southwest Florida Coast", "lat": 26.6671548718759, "lng": -81.925689, "completionDate": "2026-05-15", "sqft": 85345.0, "owner": "Lauer, William", "isRvBoat": false}, {"property": "TriLink Storage", "city": "Auburndale", "market": "Tampa - St Petersburg - Clearwater", "lat": 28.0523297674268, "lng": -81.7797575, "completionDate": "2026-03-02", "sqft": 94400.0, "owner": "TyMac Group", "isRvBoat": false}, {"property": "U - Haul Moving & Storage", "city": "Homestead", "market": "Miami", "lat": 25.469387, "lng": -80.450941, "completionDate": "2026-06-12", "sqft": 125194.0, "owner": "U - Haul Holding Company", "isRvBoat": false}, {"property": "U - Haul Moving & Storage", "city": "Bradenton", "market": "Southwest Florida Coast", "lat": 27.4764937696325, "lng": -82.394793, "completionDate": "2026-04-28", "sqft": 125312.0, "owner": "U - Haul Holding Company", "isRvBoat": false}, {"property": "Uptown Storage", "city": "Crawfordville", "market": "Tallahassee", "lat": 30.1688741477883, "lng": -84.375955, "completionDate": "2026-07-27", "sqft": 57000.0, "owner": "Banks, Ely, B", "isRvBoat": false}, {"property": "Your Storage Units", "city": "Cocoa", "market": "Orlando", "lat": 28.4123526990977, "lng": -80.7559764, "completionDate": "2026-04-22", "sqft": 128461.0, "owner": "Delta Capital Management", "isRvBoat": false}], "rentalTrends": {"months": ["2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"], "unitType": "10x10", "markets": {"Fort Lauderdale": [161.62, 160.78, 160.25, 158.45, 158.29, 157.87, 156.42, 157.2, 157.49, 158.03, 159.29, 160.29, 161.01], "Jacksonville": [117.7, 116.05, 114.27, 115.36, 115.91, 113.45, 113.7, 112.78, 113.14, 113.35, 113.86, 113.11, 114.03], "Miami": [167.91, 169.05, 166.52, 165.24, 163.13, 162.77, 161.89, 162.3, 162.88, 164.72, 165.17, 165.98, 166.32], "North Central Florida": [113.87, 112.79, 112.27, 110.08, 108.29, 106.71, 106.13, 105.54, 105.4, 105.8, 106.41, 106.11, 106.23], "Orlando": [113.25, 112.89, 111.91, 110.0, 109.21, 108.89, 107.9, 107.64, 107.18, 108.3, 108.78, 109.33, 109.66], "Pensacola": [95.44, 94.35, 93.14, 93.02, 92.59, 91.84, 91.16, 91.31, 91.84, 92.8, 92.75, 93.01, 93.61], "Port St. Lucie": [119.52, 123.54, 120.72, 118.76, 117.64, 119.88, 118.44, 118.57, 119.4, 120.2, 121.23, 121.07, 121.38], "Southwest Florida Coast": [117.67, 116.47, 116.49, 114.74, 113.78, 113.39, 113.9, 113.92, 113.53, 113.84, 114.5, 112.87, 113.71], "Tallahassee": [122.46, 124.6, 122.46, 119.72, 118.95, 118.76, 118.56, 117.86, 117.7, 118.13, 119.78, 119.34, 119.85], "Tampa - St Petersburg - Clearwater": [118.71, 117.57, 117.75, 115.4, 114.53, 113.82, 112.88, 113.27, 112.6, 113.2, 113.51, 113.07, 112.91], "West Palm Beach - Boca Raton": [149.56, 150.66, 148.56, 148.23, 147.9, 147.51, 146.49, 146.2, 147.58, 148.1, 149.06, 150.46, 151.53]}}};
+
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function marketOrderColors() {
+  return ['--series-1','--series-2','--series-3','--series-4','--series-5','--series-6','--series-7','--series-8'].map(cssVar);
+}
+function labelInkFor(hex) {
+  const c = hex.replace('#','');
+  const r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+  const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+  return lum > 0.6 ? '#0b0b0b' : '#ffffff';
+}
+
+let currentTheme = 'dark';
+
+const MONTHS = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06','2026-07'];
+let selectedMonths = new Set(MONTHS);
+
+function fmtCompact(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0) + 'K';
+  return n.toFixed(0);
+}
+function fmtMoney(n) { return '$' + n.toFixed(1) + 'M'; }
+function fmtSqft(n) { return n.toLocaleString(undefined,{maximumFractionDigits:0}) + ' SF'; }
+
+/* ---------------- Filtered data getters (driven by the month chips) ---------------- */
+function getFilteredConstruction() {
+  return DATA.construction.filter(c => c.completionDate && selectedMonths.has(c.completionDate.slice(0,7)));
+}
+function getFilteredSales() {
+  return DATA.sales.filter(s => s.saleDate && selectedMonths.has(s.saleDate.slice(0,7)));
+}
+
+/* ---------------- Month filter bar ---------------- */
+const monthChipsEl = document.getElementById('monthChips');
+MONTHS.forEach(m => {
+  const btn = document.createElement('button');
+  btn.className = 'month-chip active';
+  btn.id = 'chip-' + m;
+  btn.textContent = new Date(m+'-02').toLocaleString('en-US',{month:'short'});
+  btn.onclick = () => toggleMonth(m);
+  monthChipsEl.appendChild(btn);
+});
+
+function refreshMonthChipUI() {
+  MONTHS.forEach(m => document.getElementById('chip-'+m).classList.toggle('active', selectedMonths.has(m)));
+  document.getElementById('monthChipAll').classList.toggle('active', selectedMonths.size === MONTHS.length);
+}
+
+function toggleMonth(m) {
+  if (selectedMonths.has(m)) {
+    if (selectedMonths.size === 1) return; // always keep at least one month selected
+    selectedMonths.delete(m);
+  } else {
+    selectedMonths.add(m);
+  }
+  refreshMonthChipUI();
+  applyFilters();
+}
+
+function toggleAllMonths() {
+  selectedMonths = new Set(MONTHS);
+  refreshMonthChipUI();
+  applyFilters();
+}
+
+/* ---------------- Rental market trends toggles ---------------- */
+const RENTAL_MARKETS = Object.keys(DATA.rentalTrends.markets).sort();
+let selectedRentalMarkets = new Set(RENTAL_MARKETS);
+
+function rentalMarketStyle(index) {
+  const colors = marketOrderColors();
+  return { color: colors[index % colors.length], dash: index >= colors.length ? [6,4] : [] };
+}
+
+const rentalTogglesEl = document.getElementById('rentalMarketToggles');
+RENTAL_MARKETS.forEach((name, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'market-chip active';
+  btn.id = 'rchip-' + i;
+  const dot = document.createElement('span');
+  dot.className = 'dot';
+  dot.style.background = rentalMarketStyle(i).color;
+  btn.appendChild(dot);
+  btn.appendChild(document.createTextNode(name));
+  btn.onclick = () => toggleRentalMarket(name, i);
+  rentalTogglesEl.appendChild(btn);
+});
+
+function refreshRentalChipUI() {
+  RENTAL_MARKETS.forEach((name, i) => document.getElementById('rchip-'+i).classList.toggle('active', selectedRentalMarkets.has(name)));
+}
+
+function toggleRentalMarket(name) {
+  if (selectedRentalMarkets.has(name)) selectedRentalMarkets.delete(name);
+  else selectedRentalMarkets.add(name);
+  refreshRentalChipUI();
+  renderCharts();
+}
+
+function setAllRentalMarkets(on) {
+  selectedRentalMarkets = on ? new Set(RENTAL_MARKETS) : new Set();
+  refreshRentalChipUI();
+  renderCharts();
+}
+
+/* ---------------- KPI strip ---------------- */
+function renderKPIs() {
+  const constrF = getFilteredConstruction();
+  const salesF = getFilteredSales();
+  const ssF = constrF.filter(c => !c.isRvBoat);
+  const rvF = constrF.filter(c => c.isRvBoat);
+  const disclosedF = salesF.filter(s => s.disclosed);
+
+  const totalSqft = ssF.reduce((a,c)=>a+c.sqft,0);
+  const totalVolume = disclosedF.reduce((a,s)=>a+s.price,0);
+  const undisclosedCount = salesF.length - disclosedF.length;
+
+  const kpis = [
+    { label: 'SqFt Delivered', value: ssF.length ? fmtCompact(totalSqft) + ' SF' : '—', sub: ssF.length + ' self storage facilities' },
+    { label: 'New Facilities Delivered', value: ssF.length, sub: rvF.length + ' additional RV/boat facilities' },
+    { label: 'Sales Volume', value: disclosedF.length ? fmtMoney(totalVolume) : '—', sub: disclosedF.length + ' disclosed transactions' },
+    { label: 'Total Transactions', value: salesF.length, sub: undisclosedCount + ' undisclosed / related-party' },
+  ];
+  document.getElementById('kpiStrip').innerHTML = kpis.map(k =>
+    `<div class="stat-tile"><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="sub">${k.sub}</div></div>`
+  ).join('');
+}
+
+/* ---------------- Tabs ---------------- */
+function showView(name) {
+  document.getElementById('map-view').classList.toggle('active', name==='map');
+  document.getElementById('numbers-view').classList.toggle('active', name==='numbers');
+  document.getElementById('tab-btn-map').classList.toggle('active', name==='map');
+  document.getElementById('tab-btn-numbers').classList.toggle('active', name==='numbers');
+  if (name === 'map') setTimeout(()=>map.invalidateSize(), 50);
+  // Charts built while their container was display:none get stuck at a 0x0 canvas —
+  // resize() alone can't recover them, so rebuild instead of resizing on first reveal.
+  if (name === 'numbers') setTimeout(renderCharts, 50);
+}
+
+/* ---------------- Theme toggle ---------------- */
+function setTheme(theme) {
+  currentTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('theme-btn-dark').classList.toggle('active', theme === 'dark');
+  document.getElementById('theme-btn-light').classList.toggle('active', theme === 'light');
+
+  if (typeof baseTileLayer !== 'undefined') {
+    map.removeLayer(baseTileLayer);
+    baseTileLayer = buildTileLayer(theme).addTo(map);
+  }
+  if (typeof renderCharts === 'function' && Object.keys(charts).length) renderCharts();
+}
+
+/* ---------------- Map ---------------- */
+const map = L.map('map', { zoomControl: true }).setView([27.9, -82.0], 6.6);
+
+function buildTileLayer(theme) {
+  const url = theme === 'light'
+    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  return L.tileLayer(url, { attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 19 });
+}
+let baseTileLayer = buildTileLayer(currentTheme).addTo(map);
+
+const allMarkets = Array.from(new Set([...DATA.construction.map(c=>c.market), ...DATA.sales.map(s=>s.market)])).sort();
+const marketFilterEl = document.getElementById('marketFilter');
+allMarkets.forEach(m => {
+  const opt = document.createElement('option');
+  opt.value = m; opt.textContent = m;
+  marketFilterEl.appendChild(opt);
+});
+
+let heatLayer, salesLayerGroup, rvLayerGroup;
+
+function buildHeat(points) {
+  return L.heatLayer(points.map(c => [c.lat, c.lng, Math.max(c.sqft/8000, 1)]), {
+    radius: 32, blur: 26, maxZoom: 11, minOpacity: 0.35,
+    gradient: { 0.2: '#256abf', 0.5: '#3987e5', 0.75: '#d95926', 1.0: '#e34948' }
+  });
+}
+
+function buildSalesMarkers(points) {
+  const group = L.layerGroup();
+  points.forEach(s => {
+    const price = s.disclosed ? s.price : 0.5;
+    const radius = 5 + Math.sqrt(price) * 4;
+    const m = L.circleMarker([s.lat, s.lng], {
+      radius, color: '#199e70', weight: 2, fillColor: '#199e70', fillOpacity: 0.55
+    });
+    m.bindPopup(`
+      <div class="popup-title">${s.property} &mdash; ${s.city}, FL</div>
+      <div class="popup-row"><b>Market:</b> ${s.market}</div>
+      <div class="popup-row"><b>Sale Date:</b> ${s.saleDate ?? 'n/a'}</div>
+      <div class="popup-row"><b>Price:</b> ${s.disclosed ? '$'+s.price.toFixed(2)+'M' : 'Undisclosed'}</div>
+      <div class="popup-row"><b>$/NRSF:</b> ${s.pricePerNrsf ? '$'+s.pricePerNrsf.toFixed(2) : 'n/a'}</div>
+      <div class="popup-row"><b>Buyer:</b> ${s.buyer ?? 'n/a'}</div>
+      <div class="popup-row"><b>Seller:</b> ${s.seller ?? 'n/a'}</div>
+    `);
+    group.addLayer(m);
+  });
+  return group;
+}
+
+function buildRvMarkers(points) {
+  const group = L.layerGroup();
+  points.forEach(c => {
+    const m = L.circleMarker([c.lat, c.lng], {
+      radius: 6, color: '#c98500', weight: 2, fillColor: '#c98500', fillOpacity: 0.55
+    });
+    m.bindPopup(`
+      <div class="popup-title">${c.property} &mdash; ${c.city}, FL</div>
+      <div class="popup-row"><b>Type:</b> RV / boat storage</div>
+      <div class="popup-row"><b>Market:</b> ${c.market}</div>
+      <div class="popup-row"><b>Completion:</b> ${c.completionDate ?? 'n/a'}</div>
+      <div class="popup-row"><b>Owner:</b> ${c.owner ?? 'n/a'}</div>
+    `);
+    group.addLayer(m);
+  });
+  return group;
+}
+
+function updateMapLayers() {
+  const market = marketFilterEl.value;
+  const showHeat = document.getElementById('toggleHeat').checked;
+  const showSales = document.getElementById('toggleSales').checked;
+  const showRv = document.getElementById('toggleRv').checked;
+
+  const constrF = getFilteredConstruction();
+  const salesF = getFilteredSales();
+  const ssF = constrF.filter(c => !c.isRvBoat);
+  const rvF = constrF.filter(c => c.isRvBoat);
+
+  const ssFiltered = market==='ALL' ? ssF : ssF.filter(c=>c.market===market);
+  const salesFiltered = market==='ALL' ? salesF : salesF.filter(s=>s.market===market);
+  const rvFiltered = market==='ALL' ? rvF : rvF.filter(c=>c.market===market);
+
+  if (heatLayer) map.removeLayer(heatLayer);
+  if (salesLayerGroup) map.removeLayer(salesLayerGroup);
+  if (rvLayerGroup) map.removeLayer(rvLayerGroup);
+
+  heatLayer = buildHeat(ssFiltered);
+  salesLayerGroup = buildSalesMarkers(salesFiltered);
+  rvLayerGroup = buildRvMarkers(rvFiltered);
+
+  if (showHeat) heatLayer.addTo(map);
+  if (showSales) salesLayerGroup.addTo(map);
+  if (showRv) rvLayerGroup.addTo(map);
+}
+
+/* ---------------- Chart.js shared config ---------------- */
+Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+if (window.ChartDataLabels) Chart.register(ChartDataLabels);
+
+function baseBarOptions(horizontal) {
+  const gridColor = cssVar('--gridline'), mutedColor = cssVar('--text-muted'), baselineColor = cssVar('--baseline');
+  return {
+    indexAxis: horizontal ? 'y' : 'x',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      datalabels: { display: false },
+      tooltip: {
+        backgroundColor: cssVar('--surface-2'), titleColor: cssVar('--text-primary'), bodyColor: cssVar('--text-secondary'),
+        borderColor: cssVar('--border'), borderWidth: 1, padding: 10, cornerRadius: 6
+      }
+    },
+    scales: {
+      x: { grid: { color: horizontal ? gridColor : 'transparent' }, ticks: { color: mutedColor, font:{size:11} }, border: { color: baselineColor } },
+      y: { grid: { color: horizontal ? 'transparent' : gridColor }, ticks: { color: mutedColor, font:{size:11} }, border: { color: baselineColor } }
+    }
+  };
+}
+
+function groupTop(items, keyFn, valFn, topN) {
+  const map = new Map();
+  items.forEach(i => { const k = keyFn(i); map.set(k, (map.get(k)||0) + valFn(i)); });
+  const sorted = Array.from(map.entries()).sort((a,b)=>b[1]-a[1]);
+  const top = sorted.slice(0, topN);
+  const restSum = sorted.slice(topN).reduce((a,[,v])=>a+v,0);
+  if (restSum > 0) top.push(['Other', restSum]);
+  return top;
+}
+
+/* ---------------- Charts (rebuilt whenever the month filter changes) ---------------- */
+const charts = {};
+function destroyChart(key) { if (charts[key]) { charts[key].destroy(); delete charts[key]; } }
+
+function renderCharts() {
+  const constrF = getFilteredConstruction();
+  const salesF = getFilteredSales();
+  const ssF = constrF.filter(c => !c.isRvBoat);
+  const disclosedF = salesF.filter(s => s.disclosed);
+
+  /* ---- SqFt by Market ---- */
+  destroyChart('sqftByMarket');
+  {
+    const grouped = groupTop(ssF, c=>c.market, c=>c.sqft, 8).filter(([k])=>k!=='Other');
+    charts.sqftByMarket = new Chart(document.getElementById('chartSqftByMarket'), {
+      type: 'bar',
+      data: { labels: grouped.map(g=>g[0]), datasets: [{ data: grouped.map(g=>g[1]), backgroundColor: cssVar('--series-1'), borderRadius: 4, maxBarThickness: 22 }] },
+      options: { ...baseBarOptions(true), scales: { ...baseBarOptions(true).scales, x: { ...baseBarOptions(true).scales.x, ticks: { ...baseBarOptions(true).scales.x.ticks, callback: v => fmtCompact(v) } } },
+        plugins: { ...baseBarOptions(true).plugins, tooltip: { ...baseBarOptions(true).plugins.tooltip, callbacks: { label: ctx => fmtSqft(ctx.raw) } } } }
+    });
+  }
+
+  /* ---- Monthly SqFt ---- */
+  destroyChart('monthlySqft');
+  {
+    const byMonth = {};
+    ssF.forEach(c => { const m = c.completionDate.slice(0,7); byMonth[m] = (byMonth[m]||0) + c.sqft; });
+    const months = Object.keys(byMonth).sort();
+    const labels = months.map(m => new Date(m+'-02').toLocaleString('en-US',{month:'short'}));
+    charts.monthlySqft = new Chart(document.getElementById('chartMonthlySqft'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: months.map(m=>byMonth[m]), backgroundColor: cssVar('--series-1'), borderRadius: 4, maxBarThickness: 24 }] },
+      options: { ...baseBarOptions(false), scales: { ...baseBarOptions(false).scales, y: { ...baseBarOptions(false).scales.y, ticks: { ...baseBarOptions(false).scales.y.ticks, callback: v => fmtCompact(v) } } },
+        plugins: { ...baseBarOptions(false).plugins, tooltip: { ...baseBarOptions(false).plugins.tooltip, callbacks: { label: ctx => fmtSqft(ctx.raw) } } } }
+    });
+  }
+
+  /* ---- Total monthly completions (facility count) ---- */
+  destroyChart('monthlyCompletions');
+  {
+    const byMonth = {};
+    ssF.forEach(c => { const m = c.completionDate.slice(0,7); byMonth[m] = (byMonth[m]||0) + 1; });
+    const months = Object.keys(byMonth).sort();
+    const labels = months.map(m => new Date(m+'-02').toLocaleString('en-US',{month:'short'}));
+    charts.monthlyCompletions = new Chart(document.getElementById('chartMonthlyCompletions'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: months.map(m=>byMonth[m]), backgroundColor: cssVar('--series-1'), borderRadius: 4, maxBarThickness: 24 }] },
+      options: { ...baseBarOptions(false), scales: { ...baseBarOptions(false).scales, y: { ...baseBarOptions(false).scales.y, ticks: { ...baseBarOptions(false).scales.y.ticks, precision: 0 } } },
+        plugins: { ...baseBarOptions(false).plugins, tooltip: { ...baseBarOptions(false).plugins.tooltip, callbacks: { label: ctx => ctx.raw + ' facilit' + (ctx.raw===1?'y':'ies') } } } }
+    });
+  }
+
+  /* ---- Developer concentration (anonymized — counts by delivery-count tier, no names) ---- */
+  destroyChart('topDevelopers');
+  {
+    const countByOwner = new Map();
+    ssF.forEach(c => countByOwner.set(c.owner, (countByOwner.get(c.owner)||0) + 1));
+    const tiers = [
+      { label: '1 project', test: n => n === 1 },
+      { label: '2 projects', test: n => n === 2 },
+      { label: '3+ projects', test: n => n >= 3 },
+    ];
+    const rows = tiers.map(t => [t.label, Array.from(countByOwner.values()).filter(t.test).reduce((a,n)=>a+n, 0)]);
+    charts.topDevelopers = new Chart(document.getElementById('chartTopDevelopers'), {
+      type: 'bar',
+      data: { labels: rows.map(r=>r[0]), datasets: [{ data: rows.map(r=>r[1]), backgroundColor: cssVar('--series-1'), borderRadius: 4, maxBarThickness: 28 }] },
+      options: { ...baseBarOptions(true), scales: { ...baseBarOptions(true).scales, x: { ...baseBarOptions(true).scales.x, ticks: { ...baseBarOptions(true).scales.x.ticks, precision: 0 } } },
+        plugins: { ...baseBarOptions(true).plugins, tooltip: { ...baseBarOptions(true).plugins.tooltip, callbacks: { label: ctx => ctx.raw + ' facilit' + (ctx.raw===1?'y':'ies') + ' from developers in this tier' } } } }
+    });
+  }
+
+  /* ---- Completions share (donut) ---- */
+  destroyChart('completionsShare');
+  {
+    const grouped = groupTop(ssF, c=>c.market, ()=>1, 5);
+    const sliceColors = [...marketOrderColors().slice(0,5), cssVar('--series-other')].slice(0,grouped.length);
+    charts.completionsShare = new Chart(document.getElementById('chartCompletionsShare'), {
+      type: 'doughnut',
+      data: { labels: grouped.map(g=>g[0]), datasets: [{ data: grouped.map(g=>g[1]), backgroundColor: sliceColors, borderColor: cssVar('--surface-1'), borderWidth: 2 } ] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '62%',
+        plugins: {
+          legend: { position: 'right', labels: { color: cssVar('--text-secondary'), boxWidth: 12, font: { size: 11.5 }, padding: 12 } },
+          tooltip: { backgroundColor: cssVar('--surface-2'), titleColor: cssVar('--text-primary'), bodyColor: cssVar('--text-secondary'), borderColor: cssVar('--border'), borderWidth: 1, padding: 10, cornerRadius: 6,
+            callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} facilities` } },
+          datalabels: {
+            color: ctx => labelInkFor(ctx.dataset.backgroundColor[ctx.dataIndex]), font: { size: 11, weight: '700' },
+            formatter: (val, ctx) => { const total = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0); const pct = val/total*100; return pct >= 8 ? pct.toFixed(0)+'%' : ''; }
+          }
+        }
+      }
+    });
+  }
+
+  /* ---- Sales volume by market ---- */
+  destroyChart('volumeByMarket');
+  {
+    const grouped = groupTop(disclosedF, s=>s.market, s=>s.price, 8).filter(([k])=>k!=='Other');
+    charts.volumeByMarket = new Chart(document.getElementById('chartVolumeByMarket'), {
+      type: 'bar',
+      data: { labels: grouped.map(g=>g[0]), datasets: [{ data: grouped.map(g=>g[1]), backgroundColor: cssVar('--series-1'), borderRadius: 4, maxBarThickness: 22 }] },
+      options: { ...baseBarOptions(true), scales: { ...baseBarOptions(true).scales, x: { ...baseBarOptions(true).scales.x, ticks: { ...baseBarOptions(true).scales.x.ticks, callback: v => '$'+v.toFixed(0)+'M' } } },
+        plugins: { ...baseBarOptions(true).plugins, tooltip: { ...baseBarOptions(true).plugins.tooltip, callbacks: { label: ctx => fmtMoney(ctx.raw) } } } }
+    });
+  }
+
+  /* ---- Monthly sales volume ---- */
+  destroyChart('monthlyVolume');
+  {
+    const byMonth = {};
+    disclosedF.forEach(s => { const m = s.saleDate.slice(0,7); byMonth[m] = (byMonth[m]||0) + s.price; });
+    const months = Object.keys(byMonth).sort();
+    const labels = months.map(m => new Date(m+'-02').toLocaleString('en-US',{month:'short'}));
+    charts.monthlyVolume = new Chart(document.getElementById('chartMonthlyVolume'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: months.map(m=>byMonth[m]), backgroundColor: cssVar('--series-1'), borderRadius: 4, maxBarThickness: 24 }] },
+      options: { ...baseBarOptions(false), scales: { ...baseBarOptions(false).scales, y: { ...baseBarOptions(false).scales.y, ticks: { ...baseBarOptions(false).scales.y.ticks, callback: v => '$'+v.toFixed(0)+'M' } } },
+        plugins: { ...baseBarOptions(false).plugins, tooltip: { ...baseBarOptions(false).plugins.tooltip, callbacks: { label: ctx => fmtMoney(ctx.raw) } } } }
+    });
+  }
+
+  /* ---- # of sales by month ---- */
+  destroyChart('monthlySalesCount');
+  {
+    const byMonth = {};
+    salesF.forEach(s => { const m = s.saleDate.slice(0,7); byMonth[m] = (byMonth[m]||0) + 1; });
+    const months = Object.keys(byMonth).sort();
+    const labels = months.map(m => new Date(m+'-02').toLocaleString('en-US',{month:'short'}));
+    charts.monthlySalesCount = new Chart(document.getElementById('chartMonthlySalesCount'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: months.map(m=>byMonth[m]), backgroundColor: cssVar('--series-1'), borderRadius: 4, maxBarThickness: 24 }] },
+      options: { ...baseBarOptions(false), scales: { ...baseBarOptions(false).scales, y: { ...baseBarOptions(false).scales.y, ticks: { ...baseBarOptions(false).scales.y.ticks, precision: 0 } } },
+        plugins: { ...baseBarOptions(false).plugins, tooltip: { ...baseBarOptions(false).plugins.tooltip, callbacks: { label: ctx => ctx.raw + ' sale' + (ctx.raw===1?'':'s') } } } }
+    });
+  }
+
+  /* ---- Sales by market (table) ---- */
+  {
+    const byMarket = new Map();
+    salesF.forEach(s => byMarket.set(s.market, (byMarket.get(s.market)||0) + 1));
+    const rows = Array.from(byMarket.entries()).sort((a,b) => b[1]-a[1]);
+    const total = salesF.length;
+    let html = '<thead><tr><th>Market</th><th># of Sales</th><th>% of Total</th></tr></thead><tbody>';
+    rows.forEach(([market, count]) => {
+      const pct = total ? (count/total*100).toFixed(0) : '0';
+      html += `<tr><td>${market}</td><td>${count}</td><td>${pct}%</td></tr>`;
+    });
+    html += `</tbody><tfoot><tr><td>Total</td><td>${total}</td><td>100%</td></tr></tfoot>`;
+    document.getElementById('salesByMarketTable').innerHTML = html;
+  }
+
+  /* ---- Rental market trends (multi-line, toggleable markets) ---- */
+  destroyChart('rentalTrends');
+  {
+    const rt = DATA.rentalTrends;
+    const labels = rt.months.map(m => {
+      const [y, mo] = m.split('-');
+      return new Date(y+'-'+mo+'-02').toLocaleString('en-US',{month:'short'}) + " '" + y.slice(2);
+    });
+    const datasets = RENTAL_MARKETS
+      .map((name, i) => ({ name, i }))
+      .filter(({name}) => selectedRentalMarkets.has(name))
+      .map(({name, i}) => {
+        const style = rentalMarketStyle(i);
+        return {
+          label: name, data: rt.markets[name],
+          borderColor: style.color, backgroundColor: style.color, borderDash: style.dash,
+          borderWidth: 2, pointRadius: 2, pointHoverRadius: 5, pointBackgroundColor: style.color,
+          tension: 0.15, fill: false
+        };
+      });
+    charts.rentalTrends = new Chart(document.getElementById('chartRentalTrends'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          datalabels: { display: false },
+          tooltip: {
+            backgroundColor: cssVar('--surface-2'), titleColor: cssVar('--text-primary'), bodyColor: cssVar('--text-secondary'),
+            borderColor: cssVar('--border'), borderWidth: 1, padding: 10, cornerRadius: 6,
+            callbacks: { label: ctx => `${ctx.dataset.label}: $${ctx.raw.toFixed(0)}/mo` }
+          }
+        },
+        scales: {
+          x: { grid: { color: 'transparent' }, ticks: { color: cssVar('--text-muted'), font:{size:11} }, border: { color: cssVar('--baseline') } },
+          y: { grid: { color: cssVar('--gridline') }, ticks: { color: cssVar('--text-muted'), font:{size:11}, callback: v => '$'+v.toFixed(0) }, border: { color: cssVar('--baseline') } }
+        }
+      }
+    });
+  }
+}
+
+function applyFilters() {
+  renderKPIs();
+  updateMapLayers();
+  renderCharts();
+}
+
+/* ---------------- Data tables ---------------- */
+function buildSalesTable() {
+  const rows = [...DATA.sales].sort((a,b) => a.saleDate < b.saleDate ? 1 : -1);
+  let html = `<thead><tr><th>Date</th><th>Property</th><th>City</th><th>Market</th><th>Price</th><th>$/NRSF</th><th>Buyer</th><th>Seller</th></tr></thead><tbody>`;
+  rows.forEach(s => {
+    html += `<tr>
+      <td>${s.saleDate ?? ''}</td>
+      <td>${s.property}</td>
+      <td>${s.city}</td>
+      <td>${s.market}</td>
+      <td class="${s.disclosed?'':'flag-undisclosed'}">${s.disclosed ? '$'+s.price.toFixed(2)+'M' : 'Undisclosed'}</td>
+      <td>${s.pricePerNrsf ? '$'+s.pricePerNrsf.toFixed(2) : '—'}</td>
+      <td>${s.buyer ?? '—'}</td>
+      <td>${s.seller ?? '—'}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('salesTable').innerHTML = html;
+}
+
+function buildConstrTable() {
+  const rows = [...DATA.construction].sort((a,b) => a.completionDate < b.completionDate ? 1 : -1);
+  let html = `<thead><tr><th>Completion</th><th>Property</th><th>City</th><th>Market</th><th>SqFt</th><th>Owner / Developer</th></tr></thead><tbody>`;
+  rows.forEach(c => {
+    html += `<tr>
+      <td>${c.completionDate ?? ''}</td>
+      <td>${c.property}</td>
+      <td>${c.city}</td>
+      <td>${c.market}</td>
+      <td class="${c.isRvBoat?'flag-rv':''}">${c.sqft ? c.sqft.toLocaleString() : 'RV/Boat — n/a'}</td>
+      <td>${c.owner ?? '—'}</td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('constrTable').innerHTML = html;
+}
+buildSalesTable();
+buildConstrTable();
+
+refreshMonthChipUI();
+applyFilters();
+
+/* ---------------- Live resize (dragging the browser window edge) ---------------- */
+let resizeScheduled = false;
+window.addEventListener('resize', () => {
+  if (resizeScheduled) return;
+  resizeScheduled = true;
+  requestAnimationFrame(() => {
+    resizeScheduled = false;
+    map.invalidateSize();
+    Object.values(charts).forEach(c => c.resize());
+  });
+});
+</script>
+</body>
+</html>
